@@ -49,6 +49,14 @@ func `~`*(dt1, dt2: DateTime): int64 =
 proc format*(d: Date, f="yyyy-MM-dd"): string =
   let dt = dateTime(d.y, d.m, d.d)
   format(dt, f)
+
+converter toFloat*(d: Duration): float =
+  ## One second resolution.
+  d.inSeconds.float
+
+converter toFloat(dt: DateTime): float =
+  ## One second resolution.
+  dt.toTime.toUnix.float
   
 when isMainModule:
   doAssert dateTime(2020, mJan, 2) ~ dateTime(2020, mJan, 1) == 1
