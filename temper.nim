@@ -4,8 +4,16 @@
 import std / times
 
 type
-  Date = tuple[d: MonthdayRange, m: Month, y: int]
+  # not trying to look exactly like std/times DateTime
+  # monthdayZero and monthZero there seem to mean that 0 represents uninitialised
+  Date* = tuple[d: MonthdayRange, m: Month, y: int]
 
+proc date*(y, m, d: int): Date =
+  (d.MonthdayRange, m.Month, y).Date
+
+converter toDate*(dt: DateTime): Date =
+  (dt.monthday, dt.month, d.year).Date
+  
 # Minimally changed copypaste unexported procs from std/times ---8<--
 func toEpochDay(monthday: MonthdayRange, month: Month, year: int): int64 =
   ## Get the epoch day from a year/month/day date.
@@ -39,9 +47,16 @@ func fromEpochDay*(epochday: int64): Date =
   return (d.MonthdayRange, m.Month, (y + ord(m <= 2)).int)
 # -->8---
 
+func toEpochDay*(d: Date): int64 =
+  toEpochDay(d.d, d.m, d.y)
+  
 func toEpochDay*(dt: DateTime): int64 =
   toEpochDay(dt.monthday, dt.month, dt.year)
 
+func `~`*(d1, d2: Date): int64 =
+  ## Date difference in whole calendar days.
+  d1.toEpochDay - d2.toEpochDay
+  
 func `~`*(dt1, dt2: DateTime): int64 =
   ## Date difference in whole calendar days, ignoring time.
   dt1.toEpochDay - dt2.toEpochDay
@@ -57,6 +72,6 @@ converter toFloat*(d: Duration): float =
 converter toFloat(dt: DateTime): float =
   ## One second resolution.
   dt.toTime.toUnix.float
-  
+
 when isMainModule:
   doAssert dateTime(2020, mJan, 2) ~ dateTime(2020, mJan, 1) == 1
