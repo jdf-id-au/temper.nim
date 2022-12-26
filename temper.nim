@@ -1,5 +1,4 @@
 ## Support whole-calendar-day calculations
-## Different to `-`(dt1, dt2: DateTime): Duration
 
 import std / times
 
@@ -19,7 +18,8 @@ proc dayOfWeekISO*(d: Date): int =
   ## ISO-8601 Monday = 1 to Sunday = 7
   getDayOfWeek(d.d, d.m, d.y).ord + 1
 
-# Minimally changed copypaste unexported procs from std/times ---8<--
+# Minimally changed copypaste unexported procs from std/times
+# ---8<--
 func epochDay*(d: Date): EpochDay =
   ## Get the epoch day from a year/month/day date.
   ## The epoch day is the number of days since 1970/01/01
@@ -58,6 +58,7 @@ func date*(epochday: EpochDay): Date =
 
 func `~`*(d1, d2: Date): int =
   ## Date difference in whole calendar days.
+  ## Different to `-`*(dt1, dt2: DateTime): Duration
   (d1.epochDay - d2.epochDay).int
   
 proc weeksUntil*(d1, d2: Date): int =
