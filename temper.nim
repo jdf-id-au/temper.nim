@@ -7,6 +7,7 @@ type
   # not trying to look exactly like std/times DateTime
   # monthdayZero and monthZero there seem to mean that 0 represents uninitialised
   Date* = tuple[d: MonthdayRange, m: Month, y: int]
+  EpochDay* = int64
 
 proc date*(y, m, d: int): Date =
   (d.MonthdayRange, m.Month, y).Date
@@ -19,7 +20,7 @@ proc dayOfWeekISO*(d: Date): int =
   getDayOfWeek(d.d, d.m, d.y).ord + 1
 
 # Minimally changed copypaste unexported procs from std/times ---8<--
-func toEpochDay*(d: Date): int64 =
+func epochDay*(d: Date): EpochDay =
   ## Get the epoch day from a year/month/day date.
   ## The epoch day is the number of days since 1970/01/01
   ## (it might be negative).
@@ -36,7 +37,8 @@ func toEpochDay*(d: Date): int64 =
   let doy = (153 * (m + (if m > 2: -3 else: 9)) + 2) div 5 + d-1
   let doe = yoe * 365 + yoe div 4 - yoe div 100 + doy
   return era * 146097 + doe - 719468
-func fromEpochDay*(epochday: int64): Date =
+  
+func date*(epochday: EpochDay): Date =
   ## Get the year/month/day date from a epoch day.
   ## The epoch day is the number of days since 1970/01/01
   ## (it might be negative).
@@ -54,17 +56,35 @@ func fromEpochDay*(epochday: int64): Date =
   return (d.MonthdayRange, m.Month, (y + ord(m <= 2)).int)
 # -->8---
 
-func `~`*(d1, d2: Date): int64 =
+func `~`*(d1, d2: Date): int =
   ## Date difference in whole calendar days.
-  d1.toEpochDay - d2.toEpochDay
+  (d1.epochDay - d2.epochDay).int
   
-proc inWeeks*(d1, d2: Date): int64 =
-  (d1 ~ d2) div 7
+proc weeksUntil*(d1, d2: Date): int =
+  ## Whole weeks.
+  (d2 ~ d1) div 7
+
+# TODO template?
+proc `<`*(d1, d2: Date): bool =
+  d1.epochDay < d2.epochDay
+proc `<=`*(d1, d2: Date): bool =
+  d1.epochDay <= d2.epochDay
+proc `>`*(d1, d2: Date): bool =
+  d1.epochDay > d2.epochDay
+proc `>=`*(d1, d2: Date): bool =
+  d1.epochDay >= d2.epochDay
+proc `+`*(d: Date, o: int): Date =
+  (d.epochDay + o).date
+proc `-`*(d: Date, o: int): Date =
+  (d.epochDay - o).date
   
 proc format*(d: Date, f="yyyy-MM-dd"): string =
   let dt = dateTime(d.y, d.m, d.d)
   format(dt, f)
 
+proc `$`*(d: Date): string =
+  d.format
+  
 converter toFloat*(d: Duration): float =
   ## One second resolution.
   d.inSeconds.float
