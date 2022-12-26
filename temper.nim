@@ -12,16 +12,23 @@ proc date*(y, m, d: int): Date =
   (d.MonthdayRange, m.Month, y).Date
 
 converter toDate*(dt: DateTime): Date =
-  (dt.monthday, dt.month, d.year).Date
-  
+  (dt.monthday, dt.month, dt.year).Date
+
+proc dayOfWeekISO*(d: Date): int =
+  ## ISO-8601 Monday = 1 to Sunday = 7
+  getDayOfWeek(d.d, d.m, d.y).ord + 1
+
 # Minimally changed copypaste unexported procs from std/times ---8<--
-func toEpochDay(monthday: MonthdayRange, month: Month, year: int): int64 =
+func toEpochDay*(d: Date): int64 =
   ## Get the epoch day from a year/month/day date.
   ## The epoch day is the number of days since 1970/01/01
   ## (it might be negative).
   # Based on http://howardhinnant.github.io/date_algorithms.html
   #assertValidDate monthday, month, year
-  var (y, m, d) = (year, ord(month), monthday.int)
+  var
+    y = d.y
+    m = d.m.ord
+    d = d.d.int
   if m <= 2:
     y.dec
   let era = (if y >= 0: y else: y-399) div 400
@@ -47,20 +54,13 @@ func fromEpochDay*(epochday: int64): Date =
   return (d.MonthdayRange, m.Month, (y + ord(m <= 2)).int)
 # -->8---
 
-func toEpochDay*(d: Date): int64 =
-  toEpochDay(d.d, d.m, d.y)
-  
-func toEpochDay*(dt: DateTime): int64 =
-  toEpochDay(dt.monthday, dt.month, dt.year)
-
 func `~`*(d1, d2: Date): int64 =
   ## Date difference in whole calendar days.
   d1.toEpochDay - d2.toEpochDay
   
-func `~`*(dt1, dt2: DateTime): int64 =
-  ## Date difference in whole calendar days, ignoring time.
-  dt1.toEpochDay - dt2.toEpochDay
-
+proc inWeeks*(d1, d2: Date): int64 =
+  (d1 ~ d2) div 7
+  
 proc format*(d: Date, f="yyyy-MM-dd"): string =
   let dt = dateTime(d.y, d.m, d.d)
   format(dt, f)
@@ -69,7 +69,7 @@ converter toFloat*(d: Duration): float =
   ## One second resolution.
   d.inSeconds.float
 
-converter toFloat(dt: DateTime): float =
+converter toFloat*(dt: DateTime): float =
   ## One second resolution.
   dt.toTime.toUnix.float
 
