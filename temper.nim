@@ -13,13 +13,15 @@ type
     d*: MonthDayRange
   EpochDay* = int64
 
-proc toDate*(y, m, d: int): Date {.exportc.} =
-  Date(y: y, m: m.Month, d: d)
+proc toDate*(y, m, d: int): Date {.exportc, cdecl.} = # TODO try just using compound literal on c struct
+  echo "got here with ", y, m, d
+  result = Date(y: y, m: m.Month, d: d)
+  echo "and here with ",result
 
 converter toDate*(dt: DateTime): Date =
   Date(y: dt.year, m: dt.month, d: dt.monthday)
 
-proc dayOfWeekIso*(d: Date): int {.exportc.} =
+proc dayOfWeekIso*(d: Date): int {.exportc, cdecl.} =
   ## ISO-8601 Monday = 1 to Sunday = 7
   getDayOfWeek(d.d, d.m, d.y).ord + 1
 
