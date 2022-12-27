@@ -1,26 +1,31 @@
-## Support whole-calendar-day calculations
+## Support whole-calendar-day calculations.
+## Use treeform/chrono for anything more complex.
 
 import std / times
 
 type
-  # not trying to look exactly like std/times DateTime
+  # not trying to look like std/times DateTime
   # monthdayZero and monthZero there seem to mean that 0 represents uninitialised
-  Date* = tuple[d: MonthdayRange, m: Month, y: int]
+  # these are natural, one-based months and days
+  Date* {.exportc: "CDate".} = object # tuple doesn't preserve exported field names
+    y*: int
+    m*: Month
+    d*: MonthDayRange
   EpochDay* = int64
 
-proc date*(y, m, d: int): Date =
-  (d.MonthdayRange, m.Month, y).Date
+proc toDate*(y, m, d: int): Date {.exportc.} =
+  Date(y: y, m: m.Month, d: d)
 
 converter toDate*(dt: DateTime): Date =
-  (dt.monthday, dt.month, dt.year).Date
+  Date(y: dt.year, m: dt.month, d: dt.monthday)
 
-proc dayOfWeekISO*(d: Date): int =
+proc dayOfWeekIso*(d: Date): int {.exportc.} =
   ## ISO-8601 Monday = 1 to Sunday = 7
   getDayOfWeek(d.d, d.m, d.y).ord + 1
 
-# Minimally changed copypaste unexported procs from std/times
+# Lightly adjusted copypaste unexported procs from std/times
 # ---8<--
-func epochDay*(d: Date): EpochDay =
+proc toEpochDay*(d: Date): EpochDay =
   ## Get the epoch day from a year/month/day date.
   ## The epoch day is the number of days since 1970/01/01
   ## (it might be negative).
@@ -36,9 +41,9 @@ func epochDay*(d: Date): EpochDay =
   let yoe = y - era * 400
   let doy = (153 * (m + (if m > 2: -3 else: 9)) + 2) div 5 + d-1
   let doe = yoe * 365 + yoe div 4 - yoe div 100 + doy
-  return era * 146097 + doe - 719468
+  era * 146097 + doe - 719468
   
-func date*(epochday: EpochDay): Date =
+proc toDate*(epochday: EpochDay): Date =
   ## Get the year/month/day date from a epoch day.
   ## The epoch day is the number of days since 1970/01/01
   ## (it might be negative).
@@ -53,13 +58,13 @@ func date*(epochday: EpochDay): Date =
   let mp = (5 * doy + 2) div 153
   let d = doy - (153 * mp + 2) div 5 + 1
   let m = mp + (if mp < 10: 3 else: -9)
-  return (d.MonthdayRange, m.Month, (y + ord(m <= 2)).int)
+  Date(y: (y + ord(m <= 2)).int, m: m.Month, d: d.MonthdayRange)
 # -->8---
 
-func `~`*(d1, d2: Date): int =
+proc `~`*(d1, d2: Date): int =
   ## Date difference in whole calendar days.
   ## Different to `-`*(dt1, dt2: DateTime): Duration
-  (d1.epochDay - d2.epochDay).int
+  (d1.toEpochDay - d2.toEpochDay).int
   
 proc weeksUntil*(d1, d2: Date): int =
   ## Whole weeks.
@@ -67,17 +72,17 @@ proc weeksUntil*(d1, d2: Date): int =
 
 # TODO template?
 proc `<`*(d1, d2: Date): bool =
-  d1.epochDay < d2.epochDay
+  d1.toEpochDay < d2.toEpochDay
 proc `<=`*(d1, d2: Date): bool =
-  d1.epochDay <= d2.epochDay
+  d1.toEpochDay <= d2.toEpochDay
 proc `>`*(d1, d2: Date): bool =
-  d1.epochDay > d2.epochDay
+  d1.toEpochDay > d2.toEpochDay
 proc `>=`*(d1, d2: Date): bool =
-  d1.epochDay >= d2.epochDay
+  d1.toEpochDay >= d2.toEpochDay
 proc `+`*(d: Date, o: int): Date =
-  (d.epochDay + o).date
+  (d.toEpochDay + o).toDate
 proc `-`*(d: Date, o: int): Date =
-  (d.epochDay - o).date
+  (d.toEpochDay - o).toDate
   
 proc format*(d: Date, f="yyyy-MM-dd"): string =
   let dt = dateTime(d.y, d.m, d.d)
@@ -93,6 +98,7 @@ converter toFloat*(d: Duration): float =
 converter toFloat*(dt: DateTime): float =
   ## One second resolution.
   dt.toTime.toUnix.float
-
+  
+# Self-test
 when isMainModule:
   doAssert dateTime(2020, mJan, 2) ~ dateTime(2020, mJan, 1) == 1
