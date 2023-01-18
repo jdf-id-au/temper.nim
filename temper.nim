@@ -7,17 +7,16 @@ type
   # not trying to look like std/times DateTime
   # monthdayZero and monthZero there seem to mean that 0 represents uninitialised
   # these are natural, one-based months and days
-  Date* {.exportc: "CDate".} = object # tuple doesn't preserve exported field names
+  Date* {.exportc: "CDate".} = object # because tuple doesn't preserve exported field names
     y*: int
     m*: Month
     d*: MonthDayRange
   EpochDay* = int64
 
-proc toDate*(y, m, d: int): Date {.exportc, cdecl.} = # TODO try just using compound literal on c struct
-  echo "got here with ", y, m, d
-  result = Date(y: y, m: m.Month, d: d)
-  echo "and here with ",result
-
+proc toDate*(y, m, d: int): Date {.exportc, cdecl.} =
+  # (could also use compound literal on c struct)
+  Date(y: y, m: m.Month, d: d)
+  
 converter toDate*(dt: DateTime): Date =
   Date(y: dt.year, m: dt.month, d: dt.monthday)
 
